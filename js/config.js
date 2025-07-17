@@ -84,7 +84,7 @@ const GAME_CONFIG = {
     milestones: {
         firstGather: {
             name: 'First Steps',
-            description: 'Gather 5 Iron Ore',
+            description: 'Gather 5 Iron Ore to unlock new resources',
             condition: () => Game.state.materials.ironOre >= 5,
             completed: false,
             rewards: ['wood', 'stone']

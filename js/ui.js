@@ -25,7 +25,7 @@ const UI = {
             button.textContent = `Gather ${material.name}`;
             button.onclick = () => Game.gatherMaterial(materialKey);
             
-            // Hide if not unlocked
+            // Hide if not unlocked (but Iron Ore starts unlocked)
             if (!material.unlocked) {
                 button.classList.add('hidden');
             }
