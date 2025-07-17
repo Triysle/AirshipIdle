@@ -25,12 +25,15 @@ const Game = {
 
     // Initialize the game
     init() {
+        console.log('Game initializing...');
         this.loadGame();
         this.setupTimerCallbacks();
+        console.log('Materials config:', GAME_CONFIG.materials);
         UI.init();
         this.startAutoSave();
         this.checkMilestones();
         UI.addLogEntry('Game loaded! Start gathering materials to begin your airship journey.');
+        console.log('Game initialization complete');
     },
 
     // Setup timer callback mappings for save/load

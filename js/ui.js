@@ -14,11 +14,20 @@ const UI = {
 
     // Create gathering action buttons
     createGatheringButtons() {
+        console.log('Creating gathering buttons...');
         const container = document.getElementById('gathering-actions');
+        if (!container) {
+            console.error('Gathering actions container not found!');
+            return;
+        }
+        
         container.innerHTML = '';
+        console.log('Materials to process:', Object.keys(GAME_CONFIG.materials));
 
         Object.keys(GAME_CONFIG.materials).forEach(materialKey => {
             const material = GAME_CONFIG.materials[materialKey];
+            console.log(`Creating button for ${materialKey}:`, material);
+            
             const button = document.createElement('button');
             button.className = 'action-button';
             button.id = materialKey + '-button';
@@ -28,10 +37,15 @@ const UI = {
             // Only hide if explicitly not unlocked (Iron Ore should be visible)
             if (material.unlocked === false) {
                 button.classList.add('hidden');
+                console.log(`Hiding button for ${materialKey}`);
+            } else {
+                console.log(`Showing button for ${materialKey}`);
             }
             
             container.appendChild(button);
         });
+        
+        console.log('Gathering buttons created, container children:', container.children.length);
     },
 
     // Create refining action buttons
