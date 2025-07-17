@@ -14,10 +14,13 @@ const Game = {
             brick: 0
         },
         currency: 0,
+        totalCurrencyEarned: 0,
         guildmates: 0,
         maxGuildmates: 5,
         startTime: Date.now(),
-        playTime: 0
+        playTime: 0,
+        unlockedResources: new Set(['ironOre']),
+        completedMilestones: new Set()
     },
 
     // Initialize the game
@@ -26,6 +29,7 @@ const Game = {
         this.setupTimerCallbacks();
         UI.init();
         this.startAutoSave();
+        this.checkMilestones();
         UI.addLogEntry('Game loaded! Start gathering materials to begin your airship journey.');
     },
 
@@ -78,9 +82,13 @@ const Game = {
         const currentAmount = this.state.materials[materialKey] || 0;
         
         this.state.materials[materialKey] = Math.min(currentAmount + 1, material.storageLimit);
+        this.state.unlockedResources.add(materialKey);
+        
         UI.updateResourceDisplay();
         UI.addLogEntry(`Gathered 1 ${material.name}`);
         UI.setButtonState(materialKey + '-button', 'ready', `Gather ${material.name}`);
+        
+        this.checkMilestones();
     },
 
     // Refining actions
@@ -115,9 +123,6 @@ const Game = {
         );
 
         if (timer.start()) {
-            const costText = Object.entries(refined.cost)
-                .map(([material, amount]) => `${amount} ${GAME_CONFIG.materials[material]?.name || material}`)
-                .join(', ');
             UI.setButtonState(refinedKey + '-button', 'active', 'Refining...');
             UI.updateResourceDisplay();
             return true;
@@ -130,6 +135,8 @@ const Game = {
         const currentAmount = this.state.refinedMaterials[refinedKey] || 0;
         
         this.state.refinedMaterials[refinedKey] = Math.min(currentAmount + 1, refined.storageLimit);
+        this.state.unlockedResources.add(refinedKey);
+        
         UI.updateResourceDisplay();
         UI.addLogEntry(`Refined 1 ${refined.name}`);
         
@@ -137,6 +144,8 @@ const Game = {
             .map(([material, amount]) => `${amount} ${GAME_CONFIG.materials[material]?.name || material}`)
             .join(', ');
         UI.setButtonState(refinedKey + '-button', 'ready', `Refine ${refined.name} (${costText})`);
+        
+        this.checkMilestones();
     },
 
     // Combat actions
@@ -167,9 +176,13 @@ const Game = {
         const combat = GAME_CONFIG.combat[combatKey];
         
         this.state.currency += combat.reward;
+        this.state.totalCurrencyEarned += combat.reward;
+        
         UI.updateResourceDisplay();
         UI.addLogEntry(`Completed ${combat.name} - earned ${combat.reward} coins`);
         UI.setButtonState(combatKey + '-button', 'ready', `${combat.name} (+${combat.reward} coins)`);
+        
+        this.checkMilestones();
     },
 
     // Guild management
@@ -189,6 +202,49 @@ const Game = {
         UI.updateResourceDisplay();
         UI.addLogEntry('Recruited a new guildmate!');
         return true;
+    },
+
+    // Check and process milestones
+    checkMilestones() {
+        let hasNewUnlocks = false;
+        
+        Object.entries(GAME_CONFIG.milestones).forEach(([key, milestone]) => {
+            if (!this.state.completedMilestones.has(key) && milestone.condition()) {
+                this.state.completedMilestones.add(key);
+                milestone.completed = true;
+                
+                UI.addLogEntry(`★ Milestone completed: ${milestone.name}!`);
+                
+                // Unlock rewards
+                milestone.rewards.forEach(reward => {
+                    if (reward === 'refining') {
+                        GAME_CONFIG.refinedMaterials.ironIngot.unlocked = true;
+                        GAME_CONFIG.refinedMaterials.plank.unlocked = true;
+                        GAME_CONFIG.refinedMaterials.brick.unlocked = true;
+                        UI.addLogEntry('Refining unlocked! You can now process raw materials.');
+                        hasNewUnlocks = true;
+                    } else if (reward === 'combat') {
+                        GAME_CONFIG.combat.basic.unlocked = true;
+                        UI.addLogEntry('Combat unlocked! Fight enemies to earn currency.');
+                        hasNewUnlocks = true;
+                    } else if (reward === 'guild') {
+                        GAME_CONFIG.guild.unlocked = true;
+                        UI.addLogEntry('Guild management unlocked! Recruit guildmates to help.');
+                        hasNewUnlocks = true;
+                    } else if (GAME_CONFIG.materials[reward]) {
+                        GAME_CONFIG.materials[reward].unlocked = true;
+                        UI.addLogEntry(`${GAME_CONFIG.materials[reward].name} gathering unlocked!`);
+                        hasNewUnlocks = true;
+                    }
+                });
+            }
+        });
+        
+        if (hasNewUnlocks) {
+            UI.updateUnlockedContent();
+        }
+        
+        UI.updateObjectiveDisplay();
     },
 
     // Utility methods
@@ -215,7 +271,11 @@ const Game = {
     // Save/Load functionality
     saveGame() {
         const saveData = {
-            state: this.state,
+            state: {
+                ...this.state,
+                unlockedResources: Array.from(this.state.unlockedResources),
+                completedMilestones: Array.from(this.state.completedMilestones)
+            },
             timers: timerManager.serialize(),
             timestamp: Date.now()
         };
@@ -225,7 +285,34 @@ const Game = {
     loadGame() {
         const saveData = Storage.load();
         if (saveData) {
-            this.state = { ...this.state, ...saveData.state };
+            this.state = { 
+                ...this.state, 
+                ...saveData.state,
+                unlockedResources: new Set(saveData.state.unlockedResources || ['ironOre']),
+                completedMilestones: new Set(saveData.state.completedMilestones || [])
+            };
+            
+            // Restore milestone states and unlocks
+            this.state.completedMilestones.forEach(milestoneKey => {
+                const milestone = GAME_CONFIG.milestones[milestoneKey];
+                if (milestone) {
+                    milestone.completed = true;
+                    // Re-apply unlocks
+                    milestone.rewards.forEach(reward => {
+                        if (reward === 'refining') {
+                            GAME_CONFIG.refinedMaterials.ironIngot.unlocked = true;
+                            GAME_CONFIG.refinedMaterials.plank.unlocked = true;
+                            GAME_CONFIG.refinedMaterials.brick.unlocked = true;
+                        } else if (reward === 'combat') {
+                            GAME_CONFIG.combat.basic.unlocked = true;
+                        } else if (reward === 'guild') {
+                            GAME_CONFIG.guild.unlocked = true;
+                        } else if (GAME_CONFIG.materials[reward]) {
+                            GAME_CONFIG.materials[reward].unlocked = true;
+                        }
+                    });
+                }
+            });
             
             // Calculate offline time
             const offlineTime = Date.now() - (saveData.timestamp || Date.now());

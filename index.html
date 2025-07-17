@@ -14,6 +14,21 @@
             <p>Lead your guild to build the ultimate airship!</p>
         </header>
 
+        <!-- Progress and Objectives at top -->
+        <div class="progress-header">
+            <h2>Current Objective</h2>
+            <div id="current-objective" class="objective">
+                Gather your first materials to begin the journey
+            </div>
+            <div>
+                <label>Overall Progress</label>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="overall-progress" style="width: 0%"></div>
+                </div>
+                <span id="progress-text">0% Complete</span>
+            </div>
+        </div>
+
         <div class="game-grid">
             <!-- Resources Panel -->
             <div class="panel resources-grid">
@@ -24,28 +39,28 @@
             </div>
 
             <!-- Activities Panel -->
-            <div class="panel">
+            <div class="panel" id="gathering-panel">
                 <h2>Gathering</h2>
                 <div class="actions" id="gathering-actions">
                     <!-- Gathering actions will be populated by JavaScript -->
                 </div>
             </div>
 
-            <div class="panel">
+            <div class="panel hidden" id="refining-panel">
                 <h2>Refining</h2>
                 <div class="actions" id="refining-actions">
                     <!-- Refining actions will be populated by JavaScript -->
                 </div>
             </div>
 
-            <div class="panel">
+            <div class="panel hidden" id="combat-panel">
                 <h2>Combat</h2>
                 <div class="actions" id="combat-actions">
                     <!-- Combat actions will be populated by JavaScript -->
                 </div>
             </div>
 
-            <div class="panel">
+            <div class="panel hidden" id="guild-panel">
                 <h2>Guild Management</h2>
                 <div class="guild-info">
                     <div class="guild-stat">
@@ -64,23 +79,12 @@
                 </div>
             </div>
 
-            <!-- Progress Panel -->
+            <!-- Event Log - Always visible -->
             <div class="panel progress-section">
-                <h2>Airship Progress</h2>
-                <div>
-                    <label>Overall Progress</label>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="overall-progress" style="width: 0%"></div>
-                    </div>
-                    <span id="progress-text">0% Complete</span>
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <h3>Event Log</h3>
-                    <div class="event-log" id="event-log">
-                        <div class="log-entry">
-                            <span class="log-timestamp">[00:00]</span> Welcome to Guild Airship Builder! Start by gathering iron ore.
-                        </div>
+                <h2>Event Log</h2>
+                <div class="event-log" id="event-log">
+                    <div class="log-entry">
+                        <span class="log-timestamp">[00:00]</span> Welcome to Guild Airship Builder! Start by gathering iron ore.
                     </div>
                 </div>
             </div>

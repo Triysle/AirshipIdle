@@ -15,23 +15,50 @@ body {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 15px;
 }
 
 .header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 15px;
 }
 
 .header h1 {
     color: #3498db;
-    font-size: 2.5em;
-    margin-bottom: 10px;
+    font-size: 1.8em;
+    margin-bottom: 5px;
 }
 
 .header p {
     color: #bdc3c7;
-    font-size: 1.1em;
+    font-size: 0.9em;
+}
+
+.progress-header {
+    background-color: #34495e;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.progress-header h2 {
+    color: #3498db;
+    margin-bottom: 10px;
+    font-size: 1.3em;
+}
+
+.objective {
+    background-color: #2c3e50;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    border-left: 4px solid #e74c3c;
+}
+
+.objective.completed {
+    border-left-color: #27ae60;
+    opacity: 0.7;
 }
 
 .game-grid {
@@ -51,6 +78,6 @@ body {
     }
     
     .header h1 {
-        font-size: 2em;
+        font-size: 1.5em;
     }
 }

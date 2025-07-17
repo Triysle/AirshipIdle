@@ -8,6 +8,8 @@ const UI = {
         this.createCombatButtons();
         this.updateResourceDisplay();
         this.updateProgress();
+        this.updateUnlockedContent();
+        this.updateObjectiveDisplay();
     },
 
     // Create gathering action buttons
@@ -22,6 +24,12 @@ const UI = {
             button.id = materialKey + '-button';
             button.textContent = `Gather ${material.name}`;
             button.onclick = () => Game.gatherMaterial(materialKey);
+            
+            // Hide if not unlocked
+            if (!material.unlocked) {
+                button.classList.add('hidden');
+            }
+            
             container.appendChild(button);
         });
     },
@@ -43,6 +51,12 @@ const UI = {
                 
             button.textContent = `Refine ${refined.name} (${costText})`;
             button.onclick = () => Game.refineMaterial(refinedKey);
+            
+            // Hide if not unlocked
+            if (!refined.unlocked) {
+                button.classList.add('hidden');
+            }
+            
             container.appendChild(button);
         });
     },
@@ -60,9 +74,9 @@ const UI = {
             button.textContent = `${combat.name} (+${combat.reward} coins)`;
             button.onclick = () => Game.doCombat(combatKey);
             
+            // Hide if not unlocked
             if (!combat.unlocked) {
-                button.disabled = true;
-                button.textContent += ' (Locked)';
+                button.classList.add('hidden');
             }
             
             container.appendChild(button);
@@ -79,6 +93,12 @@ const UI = {
             const material = GAME_CONFIG.materials[materialKey];
             const amount = Game.state.materials[materialKey] || 0;
             const resourceDiv = this.createResourceElement(material.name, amount, material.storageLimit);
+            
+            // Hide if not unlocked/discovered
+            if (!Game.state.unlockedResources.has(materialKey)) {
+                resourceDiv.classList.add('hidden');
+            }
+            
             resourcesContainer.appendChild(resourceDiv);
         });
 
@@ -87,6 +107,12 @@ const UI = {
             const material = GAME_CONFIG.refinedMaterials[materialKey];
             const amount = Game.state.refinedMaterials[materialKey] || 0;
             const resourceDiv = this.createResourceElement(material.name, amount, material.storageLimit);
+            
+            // Hide if not unlocked/discovered
+            if (!Game.state.unlockedResources.has(materialKey)) {
+                resourceDiv.classList.add('hidden');
+            }
+            
             resourcesContainer.appendChild(resourceDiv);
         });
 
@@ -100,6 +126,9 @@ const UI = {
             recruitButton.disabled = Game.state.currency < GAME_CONFIG.guild.recruitCost || 
                                    Game.state.guildmates >= Game.state.maxGuildmates;
         }
+        
+        // Update button affordability
+        this.updateButtonStates();
     },
 
     // Create individual resource display element
@@ -218,6 +247,98 @@ const UI = {
         }
     },
 
+    // Update current objective display
+    updateObjectiveDisplay() {
+        const objectiveElement = document.getElementById('current-objective');
+        if (!objectiveElement) return;
+        
+        // Find the next incomplete milestone
+        const nextMilestone = Object.values(GAME_CONFIG.milestones).find(m => !m.completed);
+        
+        if (nextMilestone) {
+            objectiveElement.textContent = nextMilestone.description;
+            objectiveElement.className = 'objective';
+        } else {
+            objectiveElement.textContent = 'All milestones completed! Ready to build airship components.';
+            objectiveElement.className = 'objective completed';
+        }
+    },
+
+    // Update unlocked content visibility
+    updateUnlockedContent() {
+        // Update gathering buttons
+        Object.keys(GAME_CONFIG.materials).forEach(materialKey => {
+            const material = GAME_CONFIG.materials[materialKey];
+            const button = document.getElementById(materialKey + '-button');
+            if (button) {
+                if (material.unlocked) {
+                    button.classList.remove('hidden');
+                } else {
+                    button.classList.add('hidden');
+                }
+            }
+        });
+
+        // Update refining buttons and panel
+        const hasRefiningUnlocked = Object.values(GAME_CONFIG.refinedMaterials).some(r => r.unlocked);
+        const refiningPanel = document.getElementById('refining-panel');
+        if (refiningPanel) {
+            if (hasRefiningUnlocked) {
+                refiningPanel.classList.remove('hidden');
+            } else {
+                refiningPanel.classList.add('hidden');
+            }
+        }
+
+        Object.keys(GAME_CONFIG.refinedMaterials).forEach(refinedKey => {
+            const refined = GAME_CONFIG.refinedMaterials[refinedKey];
+            const button = document.getElementById(refinedKey + '-button');
+            if (button) {
+                if (refined.unlocked) {
+                    button.classList.remove('hidden');
+                } else {
+                    button.classList.add('hidden');
+                }
+            }
+        });
+
+        // Update combat buttons and panel
+        const hasCombatUnlocked = Object.values(GAME_CONFIG.combat).some(c => c.unlocked);
+        const combatPanel = document.getElementById('combat-panel');
+        if (combatPanel) {
+            if (hasCombatUnlocked) {
+                combatPanel.classList.remove('hidden');
+            } else {
+                combatPanel.classList.add('hidden');
+            }
+        }
+
+        Object.keys(GAME_CONFIG.combat).forEach(combatKey => {
+            const combat = GAME_CONFIG.combat[combatKey];
+            const button = document.getElementById(combatKey + '-button');
+            if (button) {
+                if (combat.unlocked) {
+                    button.classList.remove('hidden');
+                } else {
+                    button.classList.add('hidden');
+                }
+            }
+        });
+
+        // Update guild panel
+        const guildPanel = document.getElementById('guild-panel');
+        if (guildPanel) {
+            if (GAME_CONFIG.guild.unlocked) {
+                guildPanel.classList.remove('hidden');
+            } else {
+                guildPanel.classList.add('hidden');
+            }
+        }
+
+        // Update resource display visibility
+        this.updateResourceDisplay();
+    },
+
     // Show notification (for important events)
     showNotification(message, type = 'info') {
         // Simple notification system - can be enhanced later
@@ -234,7 +355,7 @@ const UI = {
             const refined = GAME_CONFIG.refinedMaterials[refinedKey];
             const button = document.getElementById(refinedKey + '-button');
             
-            if (button && !button.disabled) {
+            if (button && !button.disabled && refined.unlocked) {
                 const canAfford = Object.entries(refined.cost).every(([material, amount]) => {
                     return (Game.state.materials[material] || 0) >= amount;
                 });
@@ -250,7 +371,7 @@ const UI = {
         
         // Update recruit button
         const recruitButton = document.getElementById('recruit-button');
-        if (recruitButton) {
+        if (recruitButton && GAME_CONFIG.guild.unlocked) {
             const canRecruit = Game.state.currency >= GAME_CONFIG.guild.recruitCost && 
                              Game.state.guildmates < Game.state.maxGuildmates;
             recruitButton.style.opacity = canRecruit ? '1' : '0.6';
